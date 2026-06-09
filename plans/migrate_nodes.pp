@@ -23,7 +23,7 @@ plan node_migration::migrate_nodes(
   $extension_request = "pp_role=${pp_role_set}"
 
   # Check current roles and warn if not matched to pp_role
-  $role_statuses               = run_task( 'node_migration::get_role', $target_nodes, _catch_errors => true, _run_as => root )
+  $role_statuses               = run_task( 'node_migration::get_role', $target_nodes, _catch_errors => true )
   $failed_to_match_target_role = $role_statuses.filter |$result| { "${result.value['_output']}".strip != "role::${pp_role_set}" }
   if $failed_to_match_target_role.length > 0 {
     $nodes_that_failed_to_match_target_role = get_targets($failed_to_match_target_role.map |$n| {$n.target})
