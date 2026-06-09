@@ -8,7 +8,7 @@
 # remove_puppet_before_install (default=true) remove puppet and ssl certs before installing.
 # strict_role_checking (default=false) fails the plan if the node's current role (in classes.txt) does not match pp_role parameter.
 # (NOTE: current version of PE [2019.5.0] does not support puppet strings documentation in metadata)
-plan profile::migrate_nodes(
+plan node_migration::migrate_nodes(
   TargetSpec $targets,
   String[1]  $master,
   String[1]  $pp_role,
@@ -23,7 +23,7 @@ plan profile::migrate_nodes(
   $extension_request = "pp_role=${pp_role_set}"
 
   # Check current roles and warn if not matched to pp_role
-  $role_statuses               = run_task( 'profile::get_role', $target_nodes, _catch_errors => true, _run_as => root )
+  $role_statuses               = run_task( 'node_migration::get_role', $target_nodes, _catch_errors => true, _run_as => root )
   $failed_to_match_target_role = $role_statuses.filter |$result| { "${result.value['_output']}".strip != "role::${pp_role_set}" }
   if $failed_to_match_target_role.length > 0 {
     $nodes_that_failed_to_match_target_role = get_targets($failed_to_match_target_role.map |$n| {$n.target})
@@ -37,7 +37,7 @@ plan profile::migrate_nodes(
   unless $noop {
     # Remove puppet
     if $remove_puppet_before_install {
-      $remove_puppet_results = run_task('profile::remove_puppet', $target_nodes, _catch_errors => true, _run_as => root)
+      $remove_puppet_results = run_task('node_migration::remove_puppet', $target_nodes, _catch_errors => true, _run_as => root)
       unless $remove_puppet_results.ok {
         fail_plan('Plan Failed: failed to remove puppet on one or more nodes', 'profile/migrate_nodes', {'failedtargets' => $remove_puppet_results.error_set.names})
       }
