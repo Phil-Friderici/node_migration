@@ -1,0 +1,15 @@
+{
+  "description": "WARNING: This task removes puppet agent",
+  "implementations": [
+    {
+      "name": "remove_puppet.sh",
+      "requirements": ["shell"]
+    },
+    {
+      "name": "remove_puppet.ps1",
+      "requirements": ["powershell"]
+    }
+  ],
+  "parameters": {}
+}
+

@@ -1,0 +1,15 @@
+{
+  "description": "Detects the node's applied role class from classes.txt",
+  "implementations": [
+    {
+      "name": "get_role.sh",
+      "requirements": ["shell"]
+    },
+    {
+      "name": "get_role.ps1",
+      "requirements": ["powershell"]
+    }
+  ],
+  "parameters": {}
+}
+
