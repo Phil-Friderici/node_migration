@@ -17,7 +17,6 @@ plan node_migration::migrate_nodes(
   Boolean    $remove_puppet_before_install = true,
   Boolean    $strict_role_checking = false,
 ) {
-
   $target_nodes      = get_targets($targets)
   $pp_role_set       = $pp_role.strip
   $extension_request = "pp_role=${pp_role_set}"
@@ -26,11 +25,11 @@ plan node_migration::migrate_nodes(
   $role_statuses               = run_task( 'node_migration::get_role', $target_nodes, _catch_errors => true, _run_as => root )
   $failed_to_match_target_role = $role_statuses.filter |$result| { "${result.value['_output']}".strip != "role::${pp_role_set}" }
   if $failed_to_match_target_role.length > 0 {
-    $nodes_that_failed_to_match_target_role = get_targets($failed_to_match_target_role.map |$n| {$n.target})
+    $nodes_that_failed_to_match_target_role = get_targets($failed_to_match_target_role.map |$n| { $n.target })
     $role_data = $failed_to_match_target_role.map |$node| { "${node.target} => \"${node.value['_output'].strip}\"" }
     out::message("WARNING: A total of ${failed_to_match_target_role.length} target nodes do not match the role \"${pp_role_set}\": \n${role_data}")
     if $strict_role_checking {
-      fail_plan('Plan Failed: (strict_role_checking=true) For one or more nodes; pp_role does not match the current role found in classes.txt, this may mean that an invalid role has been specified!', 'profile/migrate_nodes', {'details' => $role_data})
+      fail_plan('Plan Failed: (strict_role_checking=true) For one or more nodes; pp_role does not match the current role found in classes.txt, this may mean that an invalid role has been specified!', 'profile/migrate_nodes', { 'details' => $role_data })
     }
   }
 
@@ -39,7 +38,7 @@ plan node_migration::migrate_nodes(
     if $remove_puppet_before_install {
       $remove_puppet_results = run_task('node_migration::remove_puppet', $target_nodes, _catch_errors => true, _run_as => root)
       unless $remove_puppet_results.ok {
-        fail_plan('Plan Failed: failed to remove puppet on one or more nodes', 'profile/migrate_nodes', {'failedtargets' => $remove_puppet_results.error_set.names})
+        fail_plan('Plan Failed: failed to remove puppet on one or more nodes', 'profile/migrate_nodes', { 'failedtargets' => $remove_puppet_results.error_set.names })
       }
     }
 
@@ -48,17 +47,17 @@ plan node_migration::migrate_nodes(
       $target_nodes, master => $master, set_noop => $set_noop, extension_request => [$extension_request], _catch_errors => true, _run_as => root
     )
     unless $bootstrap_results.ok {
-      fail_plan('Plan Failed: failed to bootstrap one or more nodes', 'profile/migrate_nodes', {'failedtargets' => $bootstrap_results.error_set.names})
+      fail_plan('Plan Failed: failed to bootstrap one or more nodes', 'profile/migrate_nodes', { 'failedtargets' => $bootstrap_results.error_set.names })
     }
 
     # Check noop status after bootstrapping
     $noop_statuses      = run_task( 'puppet_conf', $target_nodes, section => agent, setting => noop, action => get, _catch_errors => true, _run_as => root )
     $failed_to_set_noop = $noop_statuses.filter |$result| { $result.value['status'] != String($set_noop) }
     if $failed_to_set_noop.length > 0 {
-      $nodes_that_failed_to_set_noop = get_targets($failed_to_set_noop.map |$n| {$n.target})
+      $nodes_that_failed_to_set_noop = get_targets($failed_to_set_noop.map |$n| { $n.target })
       out::message("A total of ${failed_to_set_noop.length} target nodes do not have noop set to: ${set_noop} - bootstrap should have set this - re-attempting set noop on: ${nodes_that_failed_to_set_noop}")
-      $retry_noop_statuses = run_task('puppet_conf', $nodes_that_failed_to_set_noop, section => agent, setting => noop, action => set, value => "${set_noop}", _catch_errors => true, _run_as => root )
-      unless $retry_noop_statuses.ok { fail_plan('Plan Failed: failed to noop one or more nodes', 'profile/migrate_nodes', { 'failedtargets' => $retry_noop_statuses.error_set}) } else {
+      $retry_noop_statuses = run_task('puppet_conf', $nodes_that_failed_to_set_noop, section => agent, setting => noop, action => set, value => $set_noop, _catch_errors => true, _run_as => root )
+      unless $retry_noop_statuses.ok { fail_plan('Plan Failed: failed to noop one or more nodes', 'profile/migrate_nodes', { 'failedtargets' => $retry_noop_statuses.error_set }) } else {
         out::message("Successfully reset noop on: ${nodes_that_failed_to_set_noop}")
       }
     }
@@ -67,5 +66,3 @@ plan node_migration::migrate_nodes(
     return("(noop) Would have migrated ${target_nodes.length} nodes: ${target_nodes}")
   }
 }
-
-
